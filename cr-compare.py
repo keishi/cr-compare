@@ -11,7 +11,7 @@ import time
 import math
 import tempfile
 import json
-import glob
+import fnmatch
 import sys
 import csv
 
@@ -122,11 +122,17 @@ def compute_summary(a, b, bigger_is_better):
         return 'GOOD', statistically_significant
     return 'BAD', statistically_significant
 
+def find_json_files(directory):
+  for root, dirs, files in os.walk(directory):
+    for basename in files:
+      if fnmatch.fnmatch(basename, '*.json'):
+        filename = os.path.join(root, basename)
+        yield filename
+
 def load_benchmark_results(dir):
     benchmark_set = {}
-    original_cwd = os.getcwdu()
-    os.chdir(dir)
-    for file in glob.glob("*.json"):
+    json_files = find_json_files(dir)
+    for file in json_files:
         f = open(file, 'r')
         o = json.load(f)
         benchmark_name = o['benchmark_name']
@@ -140,7 +146,6 @@ def load_benchmark_results(dir):
                     'values': []
                 }
             benchmark_set[test_name]['values'] += page['values']
-    os.chdir(original_cwd)
     return benchmark_set
 
 def main():
@@ -171,7 +176,7 @@ def main():
   
   baseline_data = load_benchmark_results(args[0])
   actual_data = load_benchmark_results(args[1])
-
+  
   csvfile = open(output_file, 'w+b')
   writer = csv.writer(csvfile)
   writer.writerow(['name', 'units', 'summary', 'diff', 'mean(baseline)', 'mean(actual)', 'stdev(baseline)', 'stdev(actual)', 'statistically significant', 'count(baseline)', 'count(actual)', 'min(baseline)', 'max(baseline)', 'min(actual)', 'max(actual)'])
