@@ -179,7 +179,7 @@ def main():
   
   csvfile = open(output_file, 'w+b')
   writer = csv.writer(csvfile)
-  writer.writerow(['test name', 'page name', 'units', 'summary', 'diff', 'mean(baseline)', 'mean(actual)', 'stdev(baseline)', 'stdev(actual)', 'statistically significant', 'count(baseline)', 'count(actual)', 'min(baseline)', 'max(baseline)', 'min(actual)', 'max(actual)'])
+  writer.writerow(['test name', 'page name', 'units', 'summary', 'diff(%)', 'mean(baseline)', 'mean(actual)', 'stdev(baseline)', 'stdev(actual)', 'statistically significant', 'count(baseline)', 'count(actual)', 'min(baseline)', 'max(baseline)', 'min(actual)', 'max(actual)'])
   
   tests = set(baseline_data.keys()).intersection(actual_data.keys())
   tests = list(tests)
