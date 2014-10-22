@@ -117,7 +117,7 @@ def compute_summary(a, b, bigger_is_better):
     if not statistically_significant:
         return 'FLAKY', statistically_significant
     if abs(diff_percentage) < 1:
-        return 'FLAKY?', statistically_significant
+        return 'SAME?', statistically_significant
     if (bigger_is_better and diff > 0) or (not bigger_is_better and diff < 0):
         return 'GOOD', statistically_significant
     return 'BAD', statistically_significant
@@ -179,7 +179,7 @@ def main():
   
   csvfile = open(output_file, 'w+b')
   writer = csv.writer(csvfile)
-  writer.writerow(['name', 'units', 'summary', 'diff', 'mean(baseline)', 'mean(actual)', 'stdev(baseline)', 'stdev(actual)', 'statistically significant', 'count(baseline)', 'count(actual)', 'min(baseline)', 'max(baseline)', 'min(actual)', 'max(actual)'])
+  writer.writerow(['test name', 'page name', 'units', 'summary', 'diff', 'mean(baseline)', 'mean(actual)', 'stdev(baseline)', 'stdev(actual)', 'statistically significant', 'count(baseline)', 'count(actual)', 'min(baseline)', 'max(baseline)', 'min(actual)', 'max(actual)'])
   
   tests = set(baseline_data.keys()).intersection(actual_data.keys())
   tests = list(tests)
@@ -198,7 +198,8 @@ def main():
       diff *= -1
     diff_percentage = 100 * diff / mean_a;
     summary, statistically_significant = compute_summary(a, b, bigger_is_better)
-    writer.writerow([test_name, units, summary, diff_percentage, mean_a, mean_b, std_dev_a, std_dev_b, statistically_significant, len(a), len(b), min(a), max(a), min(b), max(b)])
+    test_name_parts = test_name.split('/')
+    writer.writerow([test_name_parts[0], test_name_parts[1], units, summary, diff_percentage, mean_a, mean_b, std_dev_a, std_dev_b, statistically_significant, len(a), len(b), min(a), max(a), min(b), max(b)])
 
 if __name__ == "__main__":
   sys.exit(main())
