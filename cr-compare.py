@@ -93,9 +93,9 @@ def compute_std_err(series):
   return std_dev / math.sqrt(len(series))
 
 def lookup_bigger_is_better(units):
-  if units in ['fps', 'runs/s']:
+  if units in ['fps', 'runs/s', 'score']:
     return True
-  if units in ['ms']:
+  if units in ['ms', '%', 'count', 'kb', 'percent']:
     return False
   logging.error('Unknown unit "%s". Please add entry to lookup_bigger_is_better function.')
   exit()
