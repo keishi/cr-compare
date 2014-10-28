@@ -130,23 +130,29 @@ def find_json_files(directory):
         yield filename
 
 def load_benchmark_results(dir):
-    benchmark_set = {}
-    json_files = find_json_files(dir)
-    for file in json_files:
-        f = open(file, 'r')
-        o = json.load(f)
-        benchmark_name = o['benchmark_name']
-        for page in o['per_page_values']:
-            test_name = '%s/%s' % (benchmark_name, page['name'])
-            if page['type'] != 'list_of_scalar_values':
-                continue
-            if test_name not in benchmark_set:
-                benchmark_set[test_name] = {
-                    'units': page['units'],
-                    'values': []
-                }
-            benchmark_set[test_name]['values'] += page['values']
-    return benchmark_set
+  benchmark_set = {}
+  json_files = find_json_files(dir)
+  for file in json_files:
+    f = open(file, 'r')
+    try:
+      o = json.load(f)
+    except ValueError:
+      continue
+    benchmark_name = o['benchmark_name']
+    for page in o['per_page_values']:
+      test_name = '%s/%s' % (benchmark_name, page['name'])
+      if test_name not in benchmark_set:
+        benchmark_set[test_name] = {
+          'units': page['units'],
+          'values': []
+        }
+      if page['type'] == 'list_of_scalar_values':
+        benchmark_set[test_name]['values'].extend(page['values'])
+      elif page['type'] == 'scalar':
+        benchmark_set[test_name]['values'].append(page['value'])
+      else:
+          continue
+  return benchmark_set
 
 def main():
   usage = "usage: %prog [options] <baseline - directory containing json files> <actual - directory containing json files>"
