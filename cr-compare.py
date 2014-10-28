@@ -75,12 +75,16 @@ def t_dist(n):
   return t_distribution[n]
 
 def compute_mean(series):
+  if len(series) == 0:
+    return 0
   sum = 0
   for value in series:
     sum += value
   return sum / len(series)
 
 def compute_std_dev(series):
+  if len(series) <= 1:
+    return float('inf')
   mean = compute_mean(series)
   delta_squared_sum = 0;
   for value in series:
@@ -95,9 +99,9 @@ def compute_std_err(series):
 def lookup_bigger_is_better(units):
   if units in ['fps', 'runs/s', 'score']:
     return True
-  if units in ['ms', '%', 'count', 'kb', 'percent']:
+  if units in ['ms', '%', 'count', 'kb', 'percent', 'mWh']:
     return False
-  logging.error('Unknown unit "%s". Please add entry to lookup_bigger_is_better function.')
+  logging.error('Unknown unit "%s". Please add entry to lookup_bigger_is_better function.' % units)
   exit()
 
 def compute_summary(a, b, bigger_is_better):
@@ -105,11 +109,16 @@ def compute_summary(a, b, bigger_is_better):
     mean_b = compute_mean(b)
     std_err_a = compute_std_err(a)
     std_err_b = compute_std_err(b)
+    if std_err_a == 0 and std_err_b == 0:
+      return 'N/A', False
     t = (mean_a - mean_b) / math.sqrt(std_err_a ** 2 + std_err_b ** 2);
     df = len(a) + len(b) - 2
     statistically_significant = abs(t) > t_dist(df + 1)
     diff = mean_b - mean_a;
-    diff_percentage = 100 * diff / mean_a
+    if mean_a == 0:
+      diff_percentage = float('inf')
+    else:
+      diff_percentage = 100 * diff / abs(mean_a)
     is_probably_same = abs(diff_percentage) < 0.1 and not statistically_significant
     print mean_a, mean_b, t, statistically_significant, is_probably_same
     if is_probably_same:
@@ -193,6 +202,14 @@ def main():
   for test_name in tests:
     a = baseline_data[test_name]['values']
     b = actual_data[test_name]['values']
+    if len(a) == 0:
+      logging.warning("baseline_data %s is empty", test_name)
+      if len(b) == 0:
+        logging.warning("actual_data %s is empty", test_name)
+      continue
+    if len(b) == 0:
+      logging.warning("actual_data %s is empty", test_name)
+      continue
     units = baseline_data[test_name]['units']
     bigger_is_better = lookup_bigger_is_better(units)
     mean_a = compute_mean(a)
@@ -202,7 +219,10 @@ def main():
     diff = mean_b - mean_a;
     if not bigger_is_better:
       diff *= -1
-    diff_percentage = 100 * diff / mean_a;
+    if mean_a == 0:
+      diff_percentage = float('inf')
+    else:
+      diff_percentage = 100 * diff / abs(mean_a)
     summary, statistically_significant = compute_summary(a, b, bigger_is_better)
     test_name_parts = test_name.split('/')
     writer.writerow([test_name_parts[0], test_name_parts[1], units, summary, diff_percentage, mean_a, mean_b, std_dev_a, std_dev_b, statistically_significant, len(a), len(b), min(a), max(a), min(b), max(b)])
