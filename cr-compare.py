@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import division
 import os
 import re
 import subprocess
@@ -14,6 +15,7 @@ import json
 import fnmatch
 import sys
 import csv
+import imp
 
 logging.basicConfig(level=logging.WARN, format='\033[1m%(asctime)s %(levelname)s : %(message)s\033[0m')
 
@@ -97,7 +99,7 @@ def compute_std_err(series):
   return std_dev / math.sqrt(len(series))
 
 def lookup_bigger_is_better(units):
-  if units in ['fps', 'runs/s', 'score']:
+  if units in ['fps', 'runs/s', 'score', 'score (bigger is better)']:
     return True
   if units in ['ms', '%', 'count', 'kb', 'percent', 'mWh']:
     return False
@@ -120,7 +122,6 @@ def compute_summary(a, b, bigger_is_better):
     else:
       diff_percentage = 100 * diff / abs(mean_a)
     is_probably_same = abs(diff_percentage) < 0.1 and not statistically_significant
-    print mean_a, mean_b, t, statistically_significant, is_probably_same
     if is_probably_same:
         return 'SAME', statistically_significant
     if not statistically_significant:
@@ -149,18 +150,22 @@ def load_benchmark_results(dir):
       continue
     benchmark_name = o['benchmark_name']
     for page in o['per_page_values']:
-      test_name = '%s/%s' % (benchmark_name, page['name'])
+      test_name = '%s/%s/%s' % (benchmark_name, page['name'], page['page_id'])
       if test_name not in benchmark_set:
         benchmark_set[test_name] = {
           'units': page['units'],
           'values': []
         }
+        if 'page_id' in page and 'pages' in o and str(page['page_id']) in o['pages']:
+          benchmark_set[test_name]['url'] = o['pages'][str(page['page_id'])]['url']
       if page['type'] == 'list_of_scalar_values':
-        benchmark_set[test_name]['values'].extend(page['values'])
+        if 'values' in page and page['values'] is not None:
+          benchmark_set[test_name]['values'].extend(page['values'])
       elif page['type'] == 'scalar':
-        benchmark_set[test_name]['values'].append(page['value'])
+        if 'value' in page and page['value'] is not None:
+          benchmark_set[test_name]['values'].append(page['value'])
       else:
-          continue
+        continue
   return benchmark_set
 
 def main():
@@ -173,6 +178,10 @@ def main():
   parser.add_option("-o", "--output", dest="output",
                     default=None,
                     help="output csv file")
+  parser.add_option("-p", "--plot", dest="plot",
+                    action="store_true",
+                    default=False,
+                    help="plot")
   options, args = parser.parse_args()
 
   if options.verbose_mode:
@@ -212,6 +221,21 @@ def main():
       continue
     units = baseline_data[test_name]['units']
     bigger_is_better = lookup_bigger_is_better(units)
+
+    test_name_parts = test_name.split('/')
+    test_page_name = test_name_parts[1]
+    if 'url' in baseline_data[test_name]:
+      test_page_name += ':%s' % baseline_data[test_name]['url'].split('/')[-1]
+    print '%s.%s' % (test_name_parts[0], test_page_name)
+    if options.plot:
+      import numpy as np
+      import pylab as P
+      P.figure()
+      n, bins, patches = P.hist([a, b], 50, normed=1, histtype='bar',
+                                  color=['red', 'blue'],
+                                  label=['baseline', 'actual'])
+      P.legend()
+      P.savefig('%s.png' % test_page_name)
     mean_a = compute_mean(a)
     mean_b = compute_mean(b)
     std_dev_a = compute_std_dev(a)
@@ -224,7 +248,6 @@ def main():
     else:
       diff_percentage = 100 * diff / abs(mean_a)
     summary, statistically_significant = compute_summary(a, b, bigger_is_better)
-    test_name_parts = test_name.split('/')
     writer.writerow([test_name_parts[0], test_name_parts[1], units, summary, diff_percentage, mean_a, mean_b, std_dev_a, std_dev_b, statistically_significant, len(a), len(b), min(a), max(a), min(b), max(b)])
 
 if __name__ == "__main__":
