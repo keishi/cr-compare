@@ -1,0 +1,16 @@
+blink_perf.animation
+blink_perf.bindings
+blink_perf.blink_gc
+blink_perf.canvas
+blink_perf.css
+blink_perf.dom
+blink_perf.events
+blink_perf.interactive
+blink_perf.layout
+blink_perf.layout_full_frame
+blink_perf.mutation
+blink_perf.parser
+blink_perf.shadow_dom
+blink_perf.svg
+blink_perf.svg_full_frame
+blink_perf.xml_http_request

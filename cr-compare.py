@@ -227,20 +227,34 @@ def main():
     if 'url' in baseline_data[test_name]:
       test_page_name += ':%s' % baseline_data[test_name]['url'].split('/')[-1]
     print '%s.%s' % (test_name_parts[0], test_page_name)
-    if options.plot:
-      import numpy as np
-      import pylab as P
-      P.figure()
-      n, bins, patches = P.hist([a, b], 50, normed=1, histtype='bar',
-                                  color=['red', 'blue'],
-                                  label=['baseline', 'actual'])
-      P.legend()
-      P.savefig('%s.png' % test_page_name)
     mean_a = compute_mean(a)
     mean_b = compute_mean(b)
     std_dev_a = compute_std_dev(a)
     std_dev_b = compute_std_dev(b)
     diff = mean_b - mean_a;
+    if options.plot:
+      import numpy as np
+      import pylab as P
+      import matplotlib.pyplot as plt
+      #f1 = P.figure()
+      #n, bins, patches = P.hist([a, b], 50, normed=1, histtype='bar',
+      #                            color=['red', 'blue'],
+      #                            label=['baseline', 'actual'])
+      #P.legend()
+      #P.savefig('%s.png' % test_page_name)
+      f2 = plt.figure()
+      rect = plt.Rectangle((0, mean_a - std_dev_a), max(len(a), len(b)), std_dev_a * 2, facecolor="r", edgecolor='none', alpha=0.2)
+      plt.gca().add_patch(rect)
+      rect = plt.Rectangle((0, mean_b - std_dev_b), max(len(a), len(b)), std_dev_b * 2, facecolor="b", edgecolor='none', alpha=0.2)
+      plt.gca().add_patch(rect)
+      plt.plot(a, 'r', marker='.')
+      plt.plot(range(len(a)), [mean_a for i in a], 'r', linestyle='--', marker=None)
+      plt.plot(b, 'b', marker='.')
+      plt.plot(range(len(b)), [mean_b for i in b], 'b', linestyle='--', marker=None)
+      plt.ylabel(units)
+      x1,x2,y1,y2 = plt.axis()
+      plt.axis((0,max(len(a), len(b)),0,y2 * 1.1))
+      f2.savefig('%s.png' % test_page_name)
     if not bigger_is_better:
       diff *= -1
     if mean_a == 0:
